@@ -25,27 +25,25 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-
 echo [OK] Python detected!
 
 REM Check if pip is available
-pip --version >nul 2>&1
+python -m pip --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] pip is not available!
     echo.
     pause
     exit /b 1
 )
-
 echo [OK] pip detected!
 
 REM Install PyInstaller if not already installed
 echo.
 echo Checking PyInstaller installation...
-pip show pyinstaller >nul 2>&1
+python -m pip show pyinstaller >nul 2>&1
 if errorlevel 1 (
     echo PyInstaller not found. Installing now...
-    pip install pyinstaller
+    python -m pip install pyinstaller
     if errorlevel 1 (
         echo [ERROR] Failed to install PyInstaller!
         echo.
@@ -61,15 +59,17 @@ echo ============================================
 echo   Converting to EXE...
 echo ============================================
 echo.
+echo Please wait... This may take a few minutes.
+echo.
 
 REM Create the executable using PyInstaller
 REM --onefile: Create a single executable file
 REM --windowed: Run without console window (for GUI apps)
 REM --name: Name of the output executable
 REM --clean: Clean PyInstaller cache
-REM --noconsole: Hide the console window (GUI only)
-pyinstaller --onefile --windowed --name "FacialExpression_4E13" --clean 4E13_preSBA2_GUI.py
+python -m PyInstaller --onefile --windowed --name "FacialExpression_4E13" --clean 4E13_preSBA2_GUI.py
 
+REM Check if build completed
 if errorlevel 1 (
     echo.
     echo [ERROR] Conversion failed!
@@ -79,20 +79,36 @@ if errorlevel 1 (
     exit /b 1
 )
 
+REM Give the file system a moment to finalize
+timeout /t 2 /nobreak >nul 2>&1
+
 echo.
 echo ============================================
-echo   Conversion Successful!
+echo   Conversion Complete!
 echo ============================================
 echo.
-echo The executable file has been created!
-echo.
-echo Location: dist\FacialExpression_4E13.exe
-echo.
-echo You can now run the program by double-clicking:
-echo   dist\FacialExpression_4E13.exe
-echo.
-echo Or copy the .exe file to any computer (Windows)
-echo and run it without Python installed!
+
+REM Verify the EXE was created using absolute path
+set "EXE_FILE=%~dp0dist\FacialExpression_4E13.exe"
+if exist "%EXE_FILE%" (
+    echo [SUCCESS] Executable file created!
+    echo.
+    for %%A in ("%EXE_FILE%") do echo File size: %%~zA bytes
+    echo.
+    echo Location: %EXE_FILE%
+    echo.
+    echo You can now run the program by double-clicking:
+    echo   dist\FacialExpression_4E13.exe
+    echo.
+    echo Or copy the .exe file to any computer (Windows)
+    echo and run it without Python installed!
+) else (
+    echo [ERROR] EXE file not found!
+    echo Please check the build output for errors.
+    echo.
+    echo Expected location: %EXE_FILE%
+)
+
 echo.
 echo ============================================
 echo.

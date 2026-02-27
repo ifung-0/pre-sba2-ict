@@ -203,9 +203,12 @@ pyinstaller --onefile --windowed --name "FacialExpression_4E13" --clean 4E13_pre
 - **Python 3.6 or higher**
 - **tkinter** (for GUI version - included with Python)
 - **NumPy library** (optional, for CLI NumPy array demonstration)
-  ```
-  pip install numpy
-  ```
+
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
@@ -218,7 +221,9 @@ sba stuff/
 ├── 4E13_preSBA2_GUI.py        # GUI version (tkinter windowed)
 ├── create_exe.bat             # Batch file for EXE (Windows)
 ├── create_app.sh              # Shell script for App (macOS/Linux)
-├── README_4E13_preSBA2.md     # This documentation file
+├── requirements.txt           # Python dependencies
+├── LICENSE                    # MIT License
+├── README.md                  # This documentation file
 ├── FacialExpression_4E13.spec # PyInstaller spec file
 │
 ├── build/                     # PyInstaller build folder (created after build)
@@ -261,6 +266,24 @@ sba stuff/
 - Menu system with multiple choice (CLI)
 - Button clicks and dropdowns (GUI)
 - Input validation and error handling
+
+### 7. Keyboard Shortcuts (GUI)
+
+| Category | Shortcut | Action |
+|----------|----------|--------|
+| **Expressions** | `1-7` | Select expression |
+| | `Numpad 1-7` | Also works |
+| **Actions** | `Ctrl+R` | Refresh display |
+| | `Ctrl+C` | Copy to clipboard |
+| | `Ctrl+D` | Reset defaults |
+| | `F1` | Show help |
+| | `Ctrl+A` | About dialog |
+| | `Ctrl+Q` | Quit program |
+| **Scale** | `Ctrl+1` | Normal (10x10) |
+| | `Ctrl+2` | Large (20x20) |
+| | `Ctrl+3` | Extra Large (30x30) |
+| **Colors** | `Shift+↑↓` | Cycle face colors |
+| | `Shift+←→` | Cycle eye colors |
 
 ---
 
@@ -324,6 +347,11 @@ This program demonstrates:
 - ✅ Fully commented code
 - ✅ Cross-platform support (Windows, macOS, Linux)
 - ✅ Standalone executable generation with PyInstaller
+- ✅ Keyboard shortcuts for power users
+- ✅ Copy to clipboard functionality
+- ✅ About dialog with project information
+- ✅ Reset to defaults feature
+- ✅ MIT License for open-source distribution
 
 ---
 

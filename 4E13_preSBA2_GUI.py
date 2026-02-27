@@ -280,7 +280,7 @@ class FacialExpressionGUI:
     def __init__(self, root):
         """Initialize the GUI application."""
         self.root = root
-        self.root.title("HKDSE ICT Pre-SBA 2: Facial Expression Program")
+        self.root.title("HKDSE ICT Pre-SBA 2: Facial Expression Program v1.0.0")
         self.root.geometry("1100x750")
         self.root.minsize(900, 650)
 
@@ -313,6 +313,74 @@ class FacialExpressionGUI:
         }
 
         self._create_widgets()
+        self._setup_keyboard_shortcuts()
+        self._update_display()
+
+    def _setup_keyboard_shortcuts(self):
+        """Setup keyboard shortcuts for quick access to features."""
+        # Expression shortcuts (number keys 1-7)
+        self.root.bind('<1>', lambda e: self._select_expression('Happy'))
+        self.root.bind('<2>', lambda e: self._select_expression('Sad'))
+        self.root.bind('<3>', lambda e: self._select_expression('Angry'))
+        self.root.bind('<4>', lambda e: self._select_expression('Surprised'))
+        self.root.bind('<5>', lambda e: self._select_expression('Wink'))
+        self.root.bind('<6>', lambda e: self._select_expression('Cool (Sunglasses)'))
+        self.root.bind('<7>', lambda e: self._select_expression('Love (Bonus!)'))
+        
+        # Numpad shortcuts
+        self.root.bind('<KP_1>', lambda e: self._select_expression('Happy'))
+        self.root.bind('<KP_2>', lambda e: self._select_expression('Sad'))
+        self.root.bind('<KP_3>', lambda e: self._select_expression('Angry'))
+        self.root.bind('<KP_4>', lambda e: self._select_expression('Surprised'))
+        self.root.bind('<KP_5>', lambda e: self._select_expression('Wink'))
+        self.root.bind('<KP_6>', lambda e: self._select_expression('Cool (Sunglasses)'))
+        self.root.bind('<KP_7>', lambda e: self._select_expression('Love (Bonus!)'))
+        
+        # Action shortcuts
+        self.root.bind('<Control-r>', lambda e: self._update_display())  # Refresh
+        self.root.bind('<Control-c>', lambda e: self._copy_to_clipboard())  # Copy
+        self.root.bind('<Control-d>', lambda e: self._reset_defaults())  # Reset defaults
+        self.root.bind('<F1>', lambda e: self._show_help())  # Help
+        self.root.bind('<Control-h>', lambda e: self._show_help())  # Help alternative
+        self.root.bind('<Control-a>', lambda e: self._show_about())  # About
+        self.root.bind('<Alt-F4>', lambda e: self._quit_app())  # Exit
+        self.root.bind('<Control-q>', lambda e: self._quit_app())  # Exit alternative
+        self.root.bind('<Control-w>', lambda e: self._quit_app())  # Exit alternative
+        
+        # Scale shortcuts
+        self.root.bind('<Control-1>', lambda e: self._set_scale(1))  # Normal
+        self.root.bind('<Control-2>', lambda e: self._set_scale(2))  # Large
+        self.root.bind('<Control-3>', lambda e: self._set_scale(3))  # Extra Large
+        
+        # Color cycle shortcuts (Shift + arrows)
+        self.root.bind('<Shift-Up>', lambda e: self._cycle_face_color(1))  # Next face color
+        self.root.bind('<Shift-Down>', lambda e: self._cycle_face_color(-1))  # Previous face color
+        self.root.bind('<Shift-Right>', lambda e: self._cycle_eye_color(1))  # Next eye color
+        self.root.bind('<Shift-Left>', lambda e: self._cycle_eye_color(-1))  # Previous eye color
+
+    def _set_scale(self, scale):
+        """Set the scale factor."""
+        self.scale = scale
+        scale_texts = {1: "Normal (10x10)", 2: "Large (20x20)", 3: "Extra Large (30x30)"}
+        self.scale_var.set(scale_texts.get(scale, "Normal (10x10)"))
+        self._update_display()
+
+    def _cycle_face_color(self, direction):
+        """Cycle through face colors."""
+        colors = list(self.face_colors.keys())
+        current_index = colors.index(self.current_face_color)
+        new_index = (current_index + direction) % len(colors)
+        self.current_face_color = colors[new_index]
+        self.face_color_var.set(self.current_face_color)
+        self._update_display()
+
+    def _cycle_eye_color(self, direction):
+        """Cycle through eye colors."""
+        colors = list(self.eye_colors.keys())
+        current_index = colors.index(self.current_eye_color)
+        new_index = (current_index + direction) % len(colors)
+        self.current_eye_color = colors[new_index]
+        self.eye_color_var.set(self.current_eye_color)
         self._update_display()
 
     def _create_widgets(self):
@@ -617,6 +685,31 @@ HOW THE PROGRAM WORKS
      • Extra Large (3x) = 30x30 effective size
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KEYBOARD SHORTCUTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Expressions:
+  [1-7]     Select expression (Happy, Sad, Angry...)
+  [Numpad]  Also works with numpad keys
+
+Actions:
+  [Ctrl+R]  Refresh display
+  [Ctrl+C]  Copy to clipboard
+  [Ctrl+D]  Reset to defaults
+  [F1]      Show this help
+  [Ctrl+A]  About dialog
+  [Ctrl+Q]  Quit program
+
+Scale:
+  [Ctrl+1]  Normal (10x10)
+  [Ctrl+2]  Large (20x20)
+  [Ctrl+3]  Extra Large (30x30)
+
+Colors:
+  [Shift+↑↓] Cycle face colors
+  [Shift+←→] Cycle eye colors
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HKDSE ICT Pre-SBA 2 • 2026
         """
 
@@ -692,6 +785,7 @@ HKDSE ICT Pre-SBA 2 • 2026
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Version: 1.0.0
+Build Date: 27/02/2026
 
 HKDSE ICT Pre-SBA 2 Project
 
@@ -712,12 +806,20 @@ FEATURES:
   ✓ 3 Background Colors
   ✓ 3 Size Scales
   ✓ Copy to Clipboard
+  ✓ Keyboard Shortcuts
   ✓ Cross-Platform Support
 
 TECHNOLOGIES:
   • Python 3.6+
   • tkinter (GUI)
   • PyInstaller (EXE/App builder)
+
+KEYBOARD SHORTCUTS:
+  • 1-7: Select expressions
+  • Ctrl+C: Copy to clipboard
+  • Ctrl+D: Reset defaults
+  • F1: Help
+  • Ctrl+Q: Quit
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 © 2026 HKDSE ICT Pre-SBA 2

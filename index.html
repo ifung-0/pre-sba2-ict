@@ -523,6 +523,67 @@ bash create_app.sh</code></pre>
                 <li>NumPy (optional, for CLI NumPy demo)</li>
             </ul>
 
+            <h3>Keyboard Shortcuts</h3>
+            <table>
+                <tr>
+                    <th>Category</th>
+                    <th>Shortcut</th>
+                    <th>Action</th>
+                </tr>
+                <tr>
+                    <td rowspan="2">Expressions</td>
+                    <td><code>1-7</code></td>
+                    <td>Select expression</td>
+                </tr>
+                <tr>
+                    <td><code>Numpad</code></td>
+                    <td>Also works</td>
+                </tr>
+                <tr>
+                    <td rowspan="5">Actions</td>
+                    <td><code>Ctrl+R</code></td>
+                    <td>Refresh display</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+C</code></td>
+                    <td>Copy to clipboard</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+D</code></td>
+                    <td>Reset defaults</td>
+                </tr>
+                <tr>
+                    <td><code>F1</code></td>
+                    <td>Show help</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+Q</code></td>
+                    <td>Quit program</td>
+                </tr>
+                <tr>
+                    <td rowspan="3">Scale</td>
+                    <td><code>Ctrl+1</code></td>
+                    <td>Normal (10x10)</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+2</code></td>
+                    <td>Large (20x20)</td>
+                </tr>
+                <tr>
+                    <td><code>Ctrl+3</code></td>
+                    <td>Extra Large (30x30)</td>
+                </tr>
+                <tr>
+                    <td rowspan="2">Colors</td>
+                    <td><code>Shift+↑↓</code></td>
+                    <td>Cycle face colors</td>
+                </tr>
+                <tr>
+                    <td><code>Shift+←→</code></td>
+                    <td>Cycle eye colors</td>
+                </tr>
+            </table>
+
             <a href="https://github.com/ifung-0/pre-sba2-ict" class="btn">📥 Download from GitHub</a>
         </section>
 
@@ -532,7 +593,10 @@ bash create_app.sh</code></pre>
 │
 ├── 4E13_preSBA2.py            # CLI version (terminal-based)
 ├── 4E13_preSBA2_GUI.py        # GUI version (tkinter windowed)
-├── create_exe.bat             # Batch file for EXE conversion
+├── create_exe.bat             # Batch file for EXE (Windows)
+├── create_app.sh              # Shell script for App (macOS/Linux)
+├── requirements.txt           # Python dependencies
+├── LICENSE                    # MIT License
 ├── README_4E13_preSBA2.md     # Documentation
 ├── FacialExpression_4E13.spec # PyInstaller spec file
 │
@@ -540,7 +604,8 @@ bash create_app.sh</code></pre>
 │   └── FacialExpression_4E13/
 │
 └── dist/                      # Output folder (after build)
-    └── FacialExpression_4E13.exe  # Standalone executable</code></pre>
+    ├── FacialExpression_4E13.exe  # Windows executable
+    └── FacialExpression_4E13.app  # macOS application</code></pre>
         </section>
 
         <footer>

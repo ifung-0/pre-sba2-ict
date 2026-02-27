@@ -5,6 +5,7 @@
 # Date: 2026-02-27
 # Description: A Python GUI program that displays facial expressions using
 #              2D arrays with mouse-clickable interface using tkinter.
+# Version: 1.0.0
 # ============================================================================
 
 import tkinter as tk
@@ -437,15 +438,33 @@ class FacialExpressionGUI:
 
         ttk.Button(
             right_frame,
+            text="📋 Copy to Clipboard",
+            command=self._copy_to_clipboard
+        ).grid(row=6, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+
+        ttk.Button(
+            right_frame,
+            text="🔧 Reset to Defaults",
+            command=self._reset_defaults
+        ).grid(row=7, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+
+        ttk.Button(
+            right_frame,
             text="❓ How It Works",
             command=self._show_help
-        ).grid(row=6, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+        ).grid(row=8, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+
+        ttk.Button(
+            right_frame,
+            text="ℹ️ About",
+            command=self._show_about
+        ).grid(row=9, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
         ttk.Button(
             right_frame,
             text="🚪 Exit",
             command=self._quit_app
-        ).grid(row=7, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+        ).grid(row=10, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
         # Status bar
         status_frame = ttk.Frame(main_frame)
@@ -602,6 +621,110 @@ HKDSE ICT Pre-SBA 2 • 2026
         """
 
         messagebox.showinfo("How It Works", help_text)
+
+    def _copy_to_clipboard(self):
+        """Copy the current face as emoji text to clipboard."""
+        face_array = self._get_face_array()
+        
+        # Convert color tuples to emojis
+        emoji_lines = []
+        for row in face_array:
+            line = ""
+            for cell in row:
+                if isinstance(cell, tuple):
+                    # cell is (hex_color, emoji)
+                    line += cell[1]
+                else:
+                    line += cell
+            emoji_lines.append(line)
+        
+        # Join lines with newlines
+        emoji_text = "\n".join(emoji_lines)
+        
+        # Copy to clipboard
+        self.root.clipboard_clear()
+        self.root.clipboard_append(emoji_text)
+        self.root.update()  # Ensure clipboard is updated
+        
+        messagebox.showinfo(
+            "Copied!", 
+            f"✅ {self.current_expression} face copied to clipboard!\n\n"
+            f"You can now paste it into any text field.\n\n"
+            f"Settings: {self.current_face_color} face, {self.current_eye_color} eyes, "
+            f"{self.current_bg_color} background, {self.scale}x scale"
+        )
+
+    def _reset_defaults(self):
+        """Reset all settings to default values."""
+        # Reset to defaults
+        self.current_face_color = "Yellow"
+        self.current_eye_color = "Black"
+        self.current_bg_color = "White"
+        self.scale = 1
+        self.current_expression = "Happy"
+        
+        # Update combo boxes
+        self.face_color_var.set("Yellow")
+        self.eye_color_var.set("Black")
+        self.bg_color_var.set("White")
+        self.scale_var.set("Normal (10x10)")
+        
+        # Reset button highlights
+        self._highlight_selected("Happy")
+        
+        # Update display
+        self._update_display()
+        
+        messagebox.showinfo(
+            "Reset Complete",
+            "✅ All settings have been reset to defaults:\n\n"
+            "• Expression: Happy\n"
+            "• Face Color: Yellow 🟨\n"
+            "• Eye Color: Black ⬛\n"
+            "• Background: White ⬜\n"
+            "• Scale: Normal (1x)"
+        )
+
+    def _show_about(self):
+        """Display about dialog with project information."""
+        about_text = """
+🎭 FACIAL EXPRESSION PROGRAM 🎭
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Version: 1.0.0
+
+HKDSE ICT Pre-SBA 2 Project
+
+STUDENT INFORMATION:
+  • Class: 4E
+  • Student ID: 13
+  • Date: 27/02/2026
+
+PROJECT DESCRIPTION:
+  A Python GUI program that displays facial 
+  expressions using 10x10 2D arrays with nested 
+  loops for rendering.
+
+FEATURES:
+  ✓ 7 Facial Expressions
+  ✓ 8 Face Colors
+  ✓ 6 Eye/Mouth Colors
+  ✓ 3 Background Colors
+  ✓ 3 Size Scales
+  ✓ Copy to Clipboard
+  ✓ Cross-Platform Support
+
+TECHNOLOGIES:
+  • Python 3.6+
+  • tkinter (GUI)
+  • PyInstaller (EXE/App builder)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+© 2026 HKDSE ICT Pre-SBA 2
+All Rights Reserved
+        """
+
+        messagebox.showinfo("About Facial Expression Program", about_text)
 
     def _quit_app(self):
         """Quit the application."""

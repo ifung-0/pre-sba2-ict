@@ -166,23 +166,35 @@ for row_index in range(len(face_array)):
 
 ### Method 4: Create Your Own EXE
 
-#### Option A: Using the Batch File
+#### Option A: Using the Batch File (Windows)
 1. Double-click `create_exe.bat`
 2. Follow the on-screen instructions
 3. The `.exe` file will be created in the `dist` folder
 
-#### Option B: Manual Conversion
-1. Install PyInstaller:
-   ```
-   pip install pyinstaller
-   ```
+#### Option B: Using the Shell Script (macOS/Linux)
+1. Open Terminal
+2. Navigate to the project folder
+3. Run: `bash create_app.sh`
+4. The `.app` file will be created in the `dist` folder
 
-2. Convert to EXE:
-   ```
-   pyinstaller --onefile --windowed --name "FacialExpression_4E13" --clean 4E13_preSBA2_GUI.py
-   ```
+#### Option C: Manual Conversion
 
-3. Find the `.exe` in the `dist` folder
+**Windows:**
+```
+pip install pyinstaller
+pyinstaller --onefile --windowed --name "FacialExpression_4E13" --clean 4E13_preSBA2_GUI.py
+```
+
+**macOS/Linux:**
+```
+pip3 install pyinstaller
+pyinstaller --onefile --windowed --name "FacialExpression_4E13" --clean 4E13_preSBA2_GUI.py
+```
+
+**Find the output:**
+- Windows: `dist\FacialExpression_4E13.exe`
+- macOS: `dist/FacialExpression_4E13.app`
+- Linux: `dist/FacialExpression_4E13`
 
 ---
 
@@ -204,7 +216,8 @@ sba stuff/
 │
 ├── 4E13_preSBA2.py            # CLI version (terminal-based)
 ├── 4E13_preSBA2_GUI.py        # GUI version (tkinter windowed)
-├── create_exe.bat             # Batch file for EXE conversion
+├── create_exe.bat             # Batch file for EXE (Windows)
+├── create_app.sh              # Shell script for App (macOS/Linux)
 ├── README_4E13_preSBA2.md     # This documentation file
 ├── FacialExpression_4E13.spec # PyInstaller spec file
 │
@@ -212,7 +225,8 @@ sba stuff/
 │   └── FacialExpression_4E13/
 │
 └── dist/                      # Output folder (created after build)
-    └── FacialExpression_4E13.exe  # Standalone executable
+    ├── FacialExpression_4E13.exe  # Windows executable
+    └── FacialExpression_4E13.app  # macOS application
 ```
 
 ---
@@ -308,6 +322,7 @@ This program demonstrates:
 - ✅ User-friendly interfaces (keyboard + mouse)
 - ✅ Creative use of Unicode emojis
 - ✅ Fully commented code
+- ✅ Cross-platform support (Windows, macOS, Linux)
 - ✅ Standalone executable generation with PyInstaller
 
 ---

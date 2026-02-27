@@ -406,10 +406,12 @@ class FacialExpressionGUI:
         # Expression buttons
         self.expression_buttons = {}
         for idx, (name, _) in enumerate(self.expression_methods.items()):
-            btn = ttk.Button(
+            btn = tk.Button(
                 left_frame,
                 text=name,
-                width=20,
+                width=25,
+                bg='#f0f0f0',
+                relief=tk.RAISED,
                 command=lambda n=name: self._select_expression(n)
             )
             btn.grid(row=idx, column=0, pady=5, sticky=(tk.W, tk.E))
@@ -555,9 +557,9 @@ class FacialExpressionGUI:
         """Highlight the selected expression button."""
         for btn_name, btn in self.expression_buttons.items():
             if btn_name == name:
-                btn.state(['pressed'])
+                btn.config(bg='#4A90D9', fg='white', relief=tk.SUNKEN)
             else:
-                btn.state(['!pressed'])
+                btn.config(bg='#f0f0f0', fg='black', relief=tk.RAISED)
 
     def _on_color_change(self, event=None):
         """Handle color selection change."""

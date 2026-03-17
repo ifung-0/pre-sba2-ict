@@ -878,37 +878,47 @@ bash create_app.sh</code></pre>
 
         // Custom expression editor
         function openCustomEditor() {
-            const editorWindow = window.open('', 'Custom Expression Editor', 'width=500,height=650');
+            const editorWindow = window.open('', 'Custom Expression Editor', 'width=550,height=700');
             
-            let gridHTML = '<div style="display: grid; grid-template-columns: repeat(10, 30px); gap: 2px; margin: 20px auto; width: fit-content;">';
-            for (let i = 0; i < 100; i++) {
-                gridHTML += `<div id="cell${i}" onclick="paintCell(${i})" style="width: 30px; height: 30px; background: #FFFFFF; border: 1px solid #333; cursor: pointer;"></div>`;
-            }
-            gridHTML += '</div>';
-            
+            const faceColor = document.getElementById('faceColor').value;
+            const eyeColor = document.getElementById('eyeColor').value;
+            const bgColor = document.getElementById('bgColor').value;
+
             editorWindow.document.write(`
                 <!DOCTYPE html>
                 <html>
-                <head><title>Custom Expression Editor</title></head>
-                <body style="font-family: Arial, sans-serif; text-align: center;">
+                <head><title>Custom Expression Editor</title>
+                <style>
+                    body { font-family: Arial, sans-serif; text-align: center; padding: 10px; }
+                    .grid { display: grid; grid-template-columns: repeat(10, 40px); gap: 2px; margin: 20px auto; width: fit-content; }
+                    .cell { width: 40px; height: 40px; border: 1px solid #333; cursor: pointer; }
+                    .controls { margin: 15px; }
+                    .btn { padding: 8px 16px; margin: 5px; cursor: pointer; }
+                </style>
+                </head>
+                <body>
                     <h2>✏️ Custom Expression Editor</h2>
                     <p>Click cells to paint with selected color</p>
-                    <div style="margin: 10px;">
-                        <label>Paint with: </label>
-                        <input type="radio" name="paintType" value="face" checked> Face
-                        <input type="radio" name="paintType" value="eye"> Eye
-                        <input type="radio" name="paintType" value="bg"> Background
+                    <div class="controls">
+                        <label><input type="radio" name="paintType" value="face" checked> Face (${faceColor})</label>
+                        <label><input type="radio" name="paintType" value="eye"> Eye (${eyeColor})</label>
+                        <label><input type="radio" name="paintType" value="bg"> Background (${bgColor})</label>
                     </div>
-                    ${gridHTML}
-                    <div style="margin: 20px;">
-                        <button onclick="saveCustom()">💾 Save & Use</button>
-                        <button onclick="clearGrid()">🗑️ Clear All</button>
+                    <div class="grid">
+                        ${Array(100).fill(0).map((_, i) => 
+                            `<div id="cell${i}" class="cell" style="background: ${bgColor};" onclick="paintCell(${i})"></div>`
+                        ).join('')}
+                    </div>
+                    <div class="controls">
+                        <button class="btn" onclick="saveCustom()">💾 Save & Use</button>
+                        <button class="btn" onclick="clearGrid()">🗑️ Clear All</button>
+                        <button class="btn" onclick="window.close()">❌ Cancel</button>
                     </div>
                     <script>
                         let paintColor = 'face';
-                        const faceColor = '${document.getElementById('faceColor').value}';
-                        const eyeColor = '${document.getElementById('eyeColor').value}';
-                        const bgColor = '${document.getElementById('bgColor').value}';
+                        const faceColor = '${faceColor}';
+                        const eyeColor = '${eyeColor}';
+                        const bgColor = '${bgColor}';
                         
                         document.querySelectorAll('input[name="paintType"]').forEach(radio => {
                             radio.addEventListener('change', (e) => paintColor = e.target.value);
@@ -933,10 +943,11 @@ bash create_app.sh</code></pre>
                             for (let row = 0; row < 10; row++) {
                                 const rowData = [];
                                 for (let col = 0; col < 10; col++) {
-                                    const color = document.getElementById('cell' + (row * 10 + col)).style.backgroundColor;
+                                    const cell = document.getElementById('cell' + (row * 10 + col));
+                                    const color = cell.style.backgroundColor;
                                     let type;
-                                    if (color === faceColor || color === 'rgb(' + hexToRgb(faceColor) + ')') type = 1;
-                                    else if (color === eyeColor || color === 'rgb(' + hexToRgb(eyeColor) + ')') type = 2;
+                                    if (color === faceColor || color === rgbToHex(color) === faceColor.toLowerCase()) type = 1;
+                                    else if (color === eyeColor || color === rgbToHex(color) === eyeColor.toLowerCase()) type = 2;
                                     else type = 0;
                                     rowData.push(type);
                                 }
@@ -944,19 +955,25 @@ bash create_app.sh</code></pre>
                             }
                             
                             // Pass data back to main window
-                            window.opener.customGrid = gridData;
-                            window.opener.isCustomMode = true;
-                            window.opener.saveToHistory();
-                            window.opener.renderFace();
+                            if (window.opener && !window.opener.closed) {
+                                window.opener.customGrid = gridData;
+                                window.opener.isCustomMode = true;
+                                window.opener.currentScale = 1;
+                                window.opener.updateScaleDisplay();
+                                window.opener.saveToHistory();
+                                window.opener.renderFace();
+                            }
                             window.close();
                         }
                         
-                        function hexToRgb(hex) {
-                            const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
-                            return result ? 
-                                parseInt(result[1], 16) + ', ' + 
-                                parseInt(result[2], 16) + ', ' + 
-                                parseInt(result[3], 16) : null;
+                        function rgbToHex(rgb) {
+                            if (!rgb || rgb.startsWith('#')) return rgb;
+                            const rgbMatch = rgb.match(/^rgb\\((\\d+),\\s*(\\d+),\\s*(\\d+)\\)$/);
+                            if (!rgbMatch) return rgb;
+                            const r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
+                            const g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
+                            const b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
+                            return '#' + r + g + b;
                         }
                     <\/script>
                 </body>

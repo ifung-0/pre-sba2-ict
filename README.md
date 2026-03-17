@@ -8,6 +8,14 @@
 
 ---
 
+## Project Website
+
+Visit the interactive demo and project page:
+
+**https://ifung-0.github.io/pre-sba2-ict/**
+
+---
+
 ## Quick Start
 
 Run the program in one click:

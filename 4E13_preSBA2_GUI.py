@@ -404,10 +404,6 @@ class FacialExpressionGUI:
         self.root.bind('<Control-1>', lambda e: self._set_scale(1))  # Normal
         self.root.bind('<Control-2>', lambda e: self._set_scale(2))  # Large
         self.root.bind('<Control-3>', lambda e: self._set_scale(3))  # Extra Large
-        self.root.bind('<Control-prior>', lambda e: self._zoom_in())  # Zoom in (Page Up)
-        self.root.bind('<Control-next>', lambda e: self._zoom_out())  # Zoom out (Page Down)
-        self.root.bind('<Control-equal>', lambda e: self._zoom_in())  # Zoom in (= key)
-        self.root.bind('<Control-minus>', lambda e: self._zoom_out())  # Zoom out (- key)
         
         # Color cycle shortcuts (Shift + arrows)
         self.root.bind('<Shift-Up>', lambda e: self._cycle_face_color(1))  # Next face color

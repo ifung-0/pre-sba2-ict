@@ -504,7 +504,16 @@ class UserInterface:
         self.renderer = FaceRenderer()
         self.current_face = None
         self.use_numpy = False
-        
+
+        # History for Undo/Redo
+        self.history = []
+        self.history_index = -1
+        self.max_history = 50
+
+        # Custom expression
+        self.custom_grid = None
+        self.is_custom_mode = False
+
         # Dictionary mapping menu choices to expression methods
         self.menu_options = {
             '1': ('Happy', self.expressions.get_happy_face),
@@ -515,6 +524,9 @@ class UserInterface:
             '6': ('Cool (Sunglasses)', self.expressions.get_cool_face),
             '7': ('Love (Bonus!)', self.expressions.get_love_face),
         }
+
+        # Save initial state
+        self._save_to_history()
     
     def display_main_menu(self):
         """Display the main menu with all available options."""
@@ -527,18 +539,25 @@ class UserInterface:
         print("-" * 60)
         print("  SELECT A FACIAL EXPRESSION:")
         print("-" * 60)
-        
+
         # Display menu options using a loop
         for key, (name, _) in self.menu_options.items():
             print(f"    [{key}] {name}")
-        
+
         print("-" * 60)
         print("  SETTINGS:")
         print("    [C] Customize Colors")
         print("    [S] Change Size (Scale)")
         print("    [N] Show with NumPy Array")
         print(f"    [B] Toggle Color (Currently: {'ON' if self.renderer.use_color else 'OFF'})")
-        print("    [H] Help / How it Works")
+        print("-" * 60)
+        print("  NEW FEATURES:")
+        print("    [R] Random Face Generator")
+        print("    [E] Custom Expression Editor")
+        print("    [X] Export to Text File")
+        print("    [U] Undo | [Y] Redo")
+        print("-" * 60)
+        print("  [H] Help / How it Works")
         print("    [Q] Quit Program")
         print("=" * 60)
     
@@ -665,38 +684,278 @@ class UserInterface:
         """)
         print("=" * 60)
         input("\n  Press Enter to return to main menu...")
+
+    def _save_to_history(self):
+        """Save current state to history for Undo functionality."""
+        state = {
+            'renderer_scale': self.renderer.scale,
+            'renderer_use_color': self.renderer.use_color,
+            'renderer_face_color': self.renderer.face_color,
+            'renderer_eye_color': self.renderer.eye_color,
+            'renderer_bg_color': self.renderer.bg_color,
+            'custom_grid': self.custom_grid,
+            'is_custom_mode': self.is_custom_mode
+        }
+        
+        # Remove any future states if we're not at the end
+        if self.history_index < len(self.history) - 1:
+            self.history = self.history[:self.history_index + 1]
+        
+        # Add new state
+        self.history.append(state)
+        
+        # Limit history size
+        if len(self.history) > self.max_history:
+            self.history.pop(0)
+        else:
+            self.history_index += 1
+
+    def _undo(self):
+        """Undo the last change."""
+        if self.history_index > 0:
+            self.history_index -= 1
+            state = self.history[self.history_index]
+            self._restore_state(state)
+            print("\n  ✓ Undo successful!")
+        else:
+            print("\n  ⚠ Nothing to undo.")
+        input("\n  Press Enter to continue...")
+
+    def _redo(self):
+        """Redo the last undone change."""
+        if self.history_index < len(self.history) - 1:
+            self.history_index += 1
+            state = self.history[self.history_index]
+            self._restore_state(state)
+            print("\n  ✓ Redo successful!")
+        else:
+            print("\n  ⚠ Nothing to redo.")
+        input("\n  Press Enter to continue...")
+
+    def _restore_state(self, state):
+        """Restore a saved state."""
+        self.renderer.scale = state['renderer_scale']
+        self.renderer.use_color = state['renderer_use_color']
+        self.renderer.face_color = state['renderer_face_color']
+        self.renderer.eye_color = state['renderer_eye_color']
+        self.renderer.bg_color = state['renderer_bg_color']
+        self.custom_grid = state['custom_grid']
+        self.is_custom_mode = state['is_custom_mode']
+
+    def random_face(self):
+        """Generate a random face with random expression and colors."""
+        import random
+        
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("\n" + "=" * 60)
+        print("          🎲 RANDOM FACE GENERATOR")
+        print("=" * 60)
+        
+        # Pick random expression
+        expressions = list(self.menu_options.keys())
+        random_expr = random.choice(expressions)
+        
+        # Pick random colors
+        face_colors = EmojiColors.get_face_colors()
+        eye_colors = EmojiColors.get_eye_colors()
+        bg_colors = EmojiColors.get_bg_colors()
+        
+        random_face_key = random.choice(list(face_colors.keys()))
+        random_eye_key = random.choice(list(eye_colors.keys()))
+        random_bg_key = random.choice(list(bg_colors.keys()))
+        
+        face_emoji = face_colors[random_face_key][1]
+        eye_emoji = eye_colors[random_eye_key][1]
+        bg_emoji = bg_colors[random_bg_key][1]
+        
+        # Set random scale
+        random_scale = random.randint(1, 3)
+        self.renderer.set_scale(random_scale)
+        
+        # Apply colors
+        self.renderer.set_colors(
+            face_emoji,
+            eye_emoji,
+            bg_emoji
+        )
+        
+        # Reset custom mode
+        self.is_custom_mode = False
+        self.custom_grid = None
+        
+        # Render the face
+        name, get_face = self.menu_options[random_expr]
+        self.current_face = self.renderer.get_face_with_colors(get_face)
+        self.renderer.render_face(self.current_face, self.renderer.use_color)
+        
+        print(f"\n  🎲 Random Expression: {name}")
+        print(f"  Scale: {random_scale}x")
+        print(f"  Face: {face_colors[random_face_key][0]} {face_emoji}")
+        print(f"  Eyes: {eye_colors[random_eye_key][0]} {eye_emoji}")
+        print(f"  Background: {bg_colors[random_bg_key][0]} {bg_emoji}")
+        
+        self._save_to_history()
+        input("\n  Press Enter to continue...")
+
+    def custom_expression_editor(self):
+        """Open custom expression editor in terminal."""
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("\n" + "=" * 60)
+        print("        ✏️  CUSTOM EXPRESSION EDITOR")
+        print("=" * 60)
+        print("\n  Create your own 10x10 facial expression!")
+        print("\n  Legend:")
+        print("    F = Face color  |  E = Eye color  |  B = Background")
+        print("\n  Instructions:")
+        print("  1. Enter each row as 10 characters (F, E, or B)")
+        print("  2. Press Enter after each row")
+        print("  3. Type 'cancel' anytime to exit")
+        print("  4. Type 'clear' to clear current row")
+        print("-" * 60)
+        
+        # Initialize custom grid
+        custom_grid = []
+        
+        for row in range(10):
+            while True:
+                row_input = input(f"  Row {row + 1}/10: ").strip().upper()
+                
+                if row_input == 'CANCEL':
+                    print("\n  Custom editor cancelled.")
+                    input("  Press Enter to continue...")
+                    return
+                
+                if row_input == 'CLEAR':
+                    print(f"  Row {row + 1} cleared.")
+                    continue
+                
+                # Validate input
+                if len(row_input) != 10:
+                    print(f"  ⚠ Row must be exactly 10 characters. You entered {len(row_input)}.")
+                    continue
+                
+                # Check for valid characters
+                valid = True
+                for char in row_input:
+                    if char not in ['F', 'E', 'B']:
+                        valid = False
+                        break
+                
+                if not valid:
+                    print("  ⚠ Only F (Face), E (Eye), and B (Background) are allowed.")
+                    continue
+                
+                # Convert to colored grid
+                colored_row = []
+                for char in row_input:
+                    if char == 'F':
+                        colored_row.append(self.renderer.face_color)
+                    elif char == 'E':
+                        colored_row.append(self.renderer.eye_color)
+                    else:
+                        colored_row.append(self.renderer.bg_color)
+                
+                custom_grid.append(colored_row)
+                break
+        
+        # Save custom expression
+        self.custom_grid = custom_grid
+        self.is_custom_mode = True
+        
+        print("\n  ✓ Custom expression created!")
+        
+        # Render it
+        self.renderer.render_face(custom_grid, self.renderer.use_color)
+        
+        print("\n  Your custom face is displayed above.")
+        print("  It will remain active until you select a preset expression.")
+        
+        self._save_to_history()
+        input("\n  Press Enter to continue...")
+
+    def export_to_file(self):
+        """Export the current face to a text file."""
+        if self.current_face is None:
+            print("\n  ⚠ No face to export. Please select an expression first.")
+            input("\n  Press Enter to continue...")
+            return
+        
+        # Generate filename
+        timestamp = __import__('datetime').datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"FacialExpression_{timestamp}.txt"
+        
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write("=" * 50 + "\n")
+                f.write("   FACIAL EXPRESSION EXPORT\n")
+                f.write("=" * 50 + "\n\n")
+                f.write(f"Exported: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                f.write(f"Scale: {self.renderer.scale}x\n")
+                f.write(f"Color Mode: {'ON' if self.renderer.use_color else 'OFF'}\n")
+                f.write(f"Face: {self.renderer.face_color}\n")
+                f.write(f"Eyes: {self.renderer.eye_color}\n")
+                f.write(f"Background: {self.renderer.bg_color}\n\n")
+                f.write("-" * 50 + "\n")
+                f.write("FACE DISPLAY:\n")
+                f.write("-" * 50 + "\n\n")
+                
+                # Write the face
+                for row in self.current_face:
+                    for cell in row:
+                        f.write(cell)
+                    f.write("\n")
+                
+                f.write("\n" + "=" * 50 + "\n")
+                f.write("HKDSE ICT Pre-SBA 2 - Facial Expression Program\n")
+                f.write("=" * 50 + "\n")
+            
+            print(f"\n  ✓ Face exported to: {filename}")
+            
+        except Exception as e:
+            print(f"\n  ✗ Export failed: {e}")
+        
+        input("\n  Press Enter to continue...")
     
     def run(self):
         """Main program loop - handles user interaction."""
-        
+
         while True:
             self.display_main_menu()
             choice = input("\n  Enter your choice: ").strip().upper()
-            
+
             # Handle expression selection
             if choice in self.menu_options:
                 name, get_face = self.menu_options[choice]
-                self.current_face = self.renderer.get_face_with_colors(get_face)
                 
+                # If in custom mode, exit it
+                if self.is_custom_mode:
+                    self.is_custom_mode = False
+                    self.custom_grid = None
+                
+                self.current_face = self.renderer.get_face_with_colors(get_face)
+
                 # Render using selected method
                 if self.use_numpy:
                     self.renderer.render_face_numpy(self.current_face, self.renderer.use_color)
                 else:
                     self.renderer.render_face(self.current_face, self.renderer.use_color)
-                
+
                 print(f"\n  Expression: {name}")
                 print(f"  Scale: {self.renderer.scale}x | Color: {'ON' if self.renderer.use_color else 'OFF'}")
                 if self.renderer.use_color:
                     print(f"  Face: {self.renderer.face_color} | Eyes: {self.renderer.eye_color}")
+                self._save_to_history()
                 input("\n  Press Enter to continue...")
-            
+
             # Handle settings
             elif choice == 'C':
                 self.customize_colors()
-            
+                self._save_to_history()
+
             elif choice == 'S':
                 self.change_scale()
-            
+                self._save_to_history()
+
             elif choice == 'N':
                 if np is None:
                     print("\n  NumPy is not installed, so NumPy mode is unavailable.")
@@ -708,7 +967,7 @@ class UserInterface:
                     status = "ON" if self.use_numpy else "OFF"
                     print(f"\n  NumPy mode: {status}")
                 input("\n  Press Enter to continue...")
-            
+
             elif choice == 'B':
                 new_state = self.renderer.toggle_color()
                 status = "ON" if new_state else "OFF"
@@ -717,16 +976,33 @@ class UserInterface:
                     print("  (Monochrome mode: white face, black eyes, black background)")
                 else:
                     print("  (Color mode: yellow face, black eyes, white background)")
+                self._save_to_history()
                 input("\n  Press Enter to continue...")
-            
+
+            # New features
+            elif choice == 'R':
+                self.random_face()
+
+            elif choice == 'E':
+                self.custom_expression_editor()
+
+            elif choice == 'X':
+                self.export_to_file()
+
+            elif choice == 'U':
+                self._undo()
+
+            elif choice == 'Y':
+                self._redo()
+
             elif choice == 'H':
                 self.display_help()
-            
+
             elif choice == 'Q':
                 print("\n  Thank you for using the Facial Expression Program!")
                 print("  Goodbye! 👋\n")
                 break
-            
+
             else:
                 print("\n  ✗ Invalid choice. Please try again.")
                 input("\n  Press Enter to continue...")

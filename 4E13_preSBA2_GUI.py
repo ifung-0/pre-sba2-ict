@@ -339,6 +339,15 @@ class FacialExpressionGUI:
         self.scale = 1
         self.current_expression = "Happy"
 
+        # History for Undo/Redo (stores tuples of settings)
+        self.history = []
+        self.history_index = -1
+        self.max_history = 50
+
+        # Custom expression editor data (10x10 grid)
+        self.custom_grid = None
+        self.is_custom_mode = False
+
         # Expression methods mapping
         self.expression_methods = {
             'Happy': self.expressions.get_happy_face,
@@ -352,6 +361,7 @@ class FacialExpressionGUI:
 
         self._create_widgets()
         self._setup_keyboard_shortcuts()
+        self._save_to_history()
         self._update_display()
 
     def _setup_keyboard_shortcuts(self):
@@ -378,17 +388,24 @@ class FacialExpressionGUI:
         self.root.bind('<Control-r>', lambda e: self._update_display())  # Refresh
         self.root.bind('<Control-c>', lambda e: self._copy_to_clipboard())  # Copy
         self.root.bind('<Control-d>', lambda e: self._reset_defaults())  # Reset defaults
+        self.root.bind('<Control-z>', lambda e: self._undo())  # Undo
+        self.root.bind('<Control-y>', lambda e: self._redo())  # Redo
+        self.root.bind('<Control-s>', lambda e: self._export_png())  # Save as PNG
+        self.root.bind('<Control-e>', lambda e: self._open_custom_editor())  # Custom editor
+        self.root.bind('<Control-n>', lambda e: self._random_face())  # Random face
         self.root.bind('<F1>', lambda e: self._show_help())  # Help
         self.root.bind('<Control-h>', lambda e: self._show_help())  # Help alternative
         self.root.bind('<Control-a>', lambda e: self._show_about())  # About
         self.root.bind('<Alt-F4>', lambda e: self._quit_app())  # Exit
         self.root.bind('<Control-q>', lambda e: self._quit_app())  # Exit alternative
         self.root.bind('<Control-w>', lambda e: self._quit_app())  # Exit alternative
-        
+
         # Scale shortcuts
         self.root.bind('<Control-1>', lambda e: self._set_scale(1))  # Normal
         self.root.bind('<Control-2>', lambda e: self._set_scale(2))  # Large
         self.root.bind('<Control-3>', lambda e: self._set_scale(3))  # Extra Large
+        self.root.bind('<Control-Plus>', lambda e: self._zoom_in())  # Zoom in
+        self.root.bind('<Control-Minus>', lambda e: self._zoom_out())  # Zoom out
         
         # Color cycle shortcuts (Shift + arrows)
         self.root.bind('<Shift-Up>', lambda e: self._cycle_face_color(1))  # Next face color
@@ -419,6 +436,84 @@ class FacialExpressionGUI:
         new_index = (current_index + direction) % len(colors)
         self.current_eye_color = colors[new_index]
         self.eye_color_var.set(self.current_eye_color)
+        self._update_display()
+
+    def _zoom_in(self):
+        """Zoom in (increase scale)."""
+        if self.scale < 3:
+            self.scale += 1
+            scale_texts = {1: "Normal (10x10)", 2: "Large (20x20)", 3: "Extra Large (30x30)"}
+            self.scale_var.set(scale_texts.get(self.scale, "Normal (10x10)"))
+            self._update_display()
+
+    def _zoom_out(self):
+        """Zoom out (decrease scale)."""
+        if self.scale > 1:
+            self.scale -= 1
+            scale_texts = {1: "Normal (10x10)", 2: "Large (20x20)", 3: "Extra Large (30x30)"}
+            self.scale_var.set(scale_texts.get(self.scale, "Normal (10x10)"))
+            self._update_display()
+
+    def _save_to_history(self):
+        """Save current state to history for Undo functionality."""
+        state = {
+            'expression': self.current_expression,
+            'face_color': self.current_face_color,
+            'eye_color': self.current_eye_color,
+            'bg_color': self.current_bg_color,
+            'scale': self.scale,
+            'custom_grid': self.custom_grid,
+            'is_custom_mode': self.is_custom_mode
+        }
+        
+        # Remove any future states if we're not at the end
+        if self.history_index < len(self.history) - 1:
+            self.history = self.history[:self.history_index + 1]
+        
+        # Add new state
+        self.history.append(state)
+        
+        # Limit history size
+        if len(self.history) > self.max_history:
+            self.history.pop(0)
+        else:
+            self.history_index += 1
+
+    def _undo(self):
+        """Undo the last change."""
+        if self.history_index > 0:
+            self.history_index -= 1
+            state = self.history[self.history_index]
+            self._restore_state(state)
+
+    def _redo(self):
+        """Redo the last undone change."""
+        if self.history_index < len(self.history) - 1:
+            self.history_index += 1
+            state = self.history[self.history_index]
+            self._restore_state(state)
+
+    def _restore_state(self, state):
+        """Restore a saved state."""
+        self.current_expression = state['expression']
+        self.current_face_color = state['face_color']
+        self.current_eye_color = state['eye_color']
+        self.current_bg_color = state['bg_color']
+        self.scale = state['scale']
+        self.custom_grid = state['custom_grid']
+        self.is_custom_mode = state['is_custom_mode']
+        
+        # Update UI controls
+        self.face_color_var.set(self.current_face_color)
+        self.eye_color_var.set(self.current_eye_color)
+        self.bg_color_var.set(self.current_bg_color)
+        scale_texts = {1: "Normal (10x10)", 2: "Large (20x20)", 3: "Extra Large (30x30)"}
+        self.scale_var.set(scale_texts.get(self.scale, "Normal (10x10)"))
+        
+        # Update button highlights
+        if not self.is_custom_mode:
+            self._highlight_selected(self.current_expression)
+        
         self._update_display()
 
     def _create_widgets(self):
@@ -519,60 +614,109 @@ class FacialExpressionGUI:
         self.bg_color_combo.grid(row=2, column=1, pady=5, padx=(5, 0))
         self.bg_color_combo.bind('<<ComboboxSelected>>', self._on_color_change)
 
-        # Scale selection
+        # Scale selection with Zoom buttons
         ttk.Label(right_frame, text="Size Scale:").grid(row=3, column=0, sticky=tk.W, pady=5)
+        
+        # Zoom buttons frame
+        zoom_frame = ttk.Frame(right_frame)
+        zoom_frame.grid(row=3, column=1, pady=5, padx=(5, 0))
+        
+        ttk.Button(
+            zoom_frame,
+            text="➖",
+            width=3,
+            command=self._zoom_out
+        ).grid(row=0, column=0, padx=(0, 2))
+        
         self.scale_var = tk.StringVar(value="Normal (10x10)")
-        self.scale_combo = ttk.Combobox(
-            right_frame,
+        ttk.Label(
+            zoom_frame,
             textvariable=self.scale_var,
-            values=["Normal (10x10)", "Large (20x20)", "Extra Large (30x30)"],
-            state="readonly",
             width=18
-        )
-        self.scale_combo.grid(row=3, column=1, pady=5, padx=(5, 0))
-        self.scale_combo.bind('<<ComboboxSelected>>', self._on_scale_change)
+        ).grid(row=0, column=1, padx=(2, 0))
+        
+        ttk.Button(
+            zoom_frame,
+            text="➕",
+            width=3,
+            command=self._zoom_in
+        ).grid(row=0, column=2, padx=(2, 0))
 
         # Separator
         ttk.Separator(right_frame, orient='horizontal').grid(
             row=4, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=15
         )
 
+        # Undo/Redo buttons (side by side)
+        undo_frame = ttk.Frame(right_frame)
+        undo_frame.grid(row=5, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+        
+        ttk.Button(
+            undo_frame,
+            text="↩️ Undo",
+            command=self._undo
+        ).pack(side=tk.LEFT, padx=(0, 5), expand=True, fill=tk.X)
+        
+        ttk.Button(
+            undo_frame,
+            text="↪️ Redo",
+            command=self._redo
+        ).pack(side=tk.LEFT, expand=True, fill=tk.X)
+
         # Action buttons
         ttk.Button(
             right_frame,
-            text="🔄 Refresh Display",
-            command=self._update_display
-        ).grid(row=5, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+            text="🎲 Random Face",
+            command=self._random_face
+        ).grid(row=6, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+
+        ttk.Button(
+            right_frame,
+            text="✏️ Custom Editor",
+            command=self._open_custom_editor
+        ).grid(row=7, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+
+        ttk.Button(
+            right_frame,
+            text="💾 Export as PNG",
+            command=self._export_png
+        ).grid(row=8, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
         ttk.Button(
             right_frame,
             text="📋 Copy to Clipboard",
             command=self._copy_to_clipboard
-        ).grid(row=6, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+        ).grid(row=9, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+
+        ttk.Button(
+            right_frame,
+            text="🔄 Refresh Display",
+            command=self._update_display
+        ).grid(row=10, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
         ttk.Button(
             right_frame,
             text="🔧 Reset to Defaults",
             command=self._reset_defaults
-        ).grid(row=7, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+        ).grid(row=11, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
         ttk.Button(
             right_frame,
             text="❓ How It Works",
             command=self._show_help
-        ).grid(row=8, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+        ).grid(row=12, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
         ttk.Button(
             right_frame,
             text="ℹ️ About",
             command=self._show_about
-        ).grid(row=9, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+        ).grid(row=13, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
         ttk.Button(
             right_frame,
             text="🚪 Exit",
             command=self._quit_app
-        ).grid(row=10, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
+        ).grid(row=14, column=0, columnspan=2, pady=5, sticky=(tk.W, tk.E))
 
         # Status bar
         status_frame = ttk.Frame(main_frame)
@@ -588,7 +732,10 @@ class FacialExpressionGUI:
     def _select_expression(self, name):
         """Handle expression selection."""
         self.current_expression = name
+        self.is_custom_mode = False
+        self.custom_grid = None
         self._highlight_selected(name)
+        self._save_to_history()
         self._update_display()
 
     def _highlight_selected(self, name):
@@ -604,27 +751,287 @@ class FacialExpressionGUI:
         self.current_face_color = self.face_color_var.get()
         self.current_eye_color = self.eye_color_var.get()
         self.current_bg_color = self.bg_color_var.get()
-        self._update_display()
-
-    def _on_scale_change(self, event=None):
-        """Handle scale selection change."""
-        scale_text = self.scale_var.get()
-        if "Normal" in scale_text:
-            self.scale = 1
-        elif "Large" in scale_text:
-            self.scale = 2
-        else:
-            self.scale = 3
+        self._save_to_history()
         self._update_display()
 
     def _get_face_array(self):
         """Get the current face array with applied colors."""
+        # If in custom mode, return the custom grid
+        if self.is_custom_mode and self.custom_grid:
+            return self.custom_grid
+        
         get_face_func = self.expression_methods[self.current_expression]
         face_color = self.face_colors[self.current_face_color]
         eye_color = self.eye_colors[self.current_eye_color]
         bg_color = self.bg_colors.get(self.current_bg_color, EmojiColors.WHITE_BG)
 
         return get_face_func(face_color, eye_color, bg_color)
+
+    def _random_face(self):
+        """Generate a random face with random expression and colors."""
+        import random
+        
+        # Pick random expression
+        expressions = list(self.expression_methods.keys())
+        self.current_expression = random.choice(expressions)
+        
+        # Pick random colors
+        face_colors = list(self.face_colors.keys())
+        eye_colors = list(self.eye_colors.keys())
+        bg_colors = list(self.bg_colors.keys())
+        
+        self.current_face_color = random.choice(face_colors)
+        self.current_eye_color = random.choice(eye_colors)
+        self.current_bg_color = random.choice(bg_colors)
+        
+        # Random scale
+        self.scale = random.randint(1, 3)
+        
+        # Reset custom mode
+        self.is_custom_mode = False
+        self.custom_grid = None
+        
+        # Update UI
+        self.face_color_var.set(self.current_face_color)
+        self.eye_color_var.set(self.current_eye_color)
+        self.bg_color_var.set(self.current_bg_color)
+        scale_texts = {1: "Normal (10x10)", 2: "Large (20x20)", 3: "Extra Large (30x30)"}
+        self.scale_var.set(scale_texts.get(self.scale, "Normal (10x10)"))
+        self._highlight_selected(self.current_expression)
+        
+        self._save_to_history()
+        self._update_display()
+        
+        messagebox.showinfo(
+            "Random Face Generated",
+            f"🎲 Random expression created!\n\n"
+            f"Expression: {self.current_expression}\n"
+            f"Face Color: {self.current_face_color}\n"
+            f"Eye Color: {self.current_eye_color}\n"
+            f"Background: {self.current_bg_color}\n"
+            f"Scale: {self.scale}x"
+        )
+
+    def _export_png(self):
+        """Export the current face as a PNG image."""
+        from tkinter import filedialog
+        
+        # Get file path
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".png",
+            filetypes=[("PNG files", "*.png"), ("All files", "*.*")],
+            initialfile=f"FacialExpression_{self.current_expression}.png"
+        )
+        
+        if file_path:
+            try:
+                # Get the canvas postscript data
+                ps_data = self.face_canvas.postscript(colormode='color')
+                
+                # Create a temporary file
+                import tempfile
+                import os
+                
+                with tempfile.NamedTemporaryFile(suffix='.ps', delete=False) as tmp_file:
+                    tmp_file.write(ps_data.encode('utf-8'))
+                    tmp_ps_path = tmp_file.name
+                
+                # Convert to PNG using PIL if available
+                try:
+                    from PIL import Image, ImageDraw
+                    import io
+                    
+                    # Read postscript and convert
+                    img = Image.open(io.BytesIO(ps_data.encode('utf-8')))
+                    img.save(file_path, 'PNG')
+                    
+                    messagebox.showinfo(
+                        "Export Successful",
+                        f"✅ Face exported to:\n{file_path}"
+                    )
+                except ImportError:
+                    # PIL not available, save as postscript
+                    with open(file_path.replace('.png', '.ps'), 'w') as f:
+                        f.write(ps_data)
+                    messagebox.showinfo(
+                        "Export Info",
+                        f"⚠️ PIL/Pillow not installed.\n"
+                        f"Saved as PostScript (.ps) instead of PNG.\n\n"
+                        f"Install Pillow with: pip install Pillow\n"
+                        f"File saved to: {file_path.replace('.png', '.ps')}"
+                    )
+                
+                # Clean up temp file
+                os.unlink(tmp_ps_path)
+                
+            except Exception as e:
+                messagebox.showerror(
+                    "Export Failed",
+                    f"❌ Could not export image.\n\nError: {str(e)}\n\n"
+                    f"Tip: Install Pillow for PNG export:\n"
+                    f"pip install Pillow"
+                )
+
+    def _open_custom_editor(self):
+        """Open the custom expression editor window."""
+        # Create a new top-level window
+        editor_window = tk.Toplevel(self.root)
+        editor_window.title("✏️ Custom Expression Editor")
+        editor_window.geometry("600x700")
+        editor_window.transient(self.root)
+        editor_window.grab_set()
+        
+        # Create 10x10 grid for editing
+        custom_frame = ttk.LabelFrame(editor_window, text="Design Your Face", padding="10")
+        custom_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Store grid buttons
+        grid_buttons = []
+        
+        # Current color for painting
+        paint_color = tk.StringVar(value="face")
+        
+        def on_cell_click(row, col):
+            """Handle cell click in custom editor."""
+            color_type = paint_color.get()
+            if color_type == "face":
+                color = self.face_colors[self.current_face_color]
+            elif color_type == "eye":
+                color = self.eye_colors[self.current_eye_color]
+            else:
+                color = self.bg_colors[self.current_bg_color]
+            
+            # Update the cell
+            grid_buttons[row][col].config(bg=color[0])
+            
+            # Update custom grid data
+            if self.custom_grid is None or len(self.custom_grid) != 10:
+                # Initialize custom grid
+                self.custom_grid = [[self.bg_colors["White"] for _ in range(10)] for _ in range(10)]
+            
+            self.custom_grid[row][col] = color
+        
+        def clear_grid():
+            """Clear the grid to background color."""
+            bg_color = self.bg_colors[self.current_bg_color]
+            for row in range(10):
+                for col in range(10):
+                    grid_buttons[row][col].config(bg=bg_color[0])
+                    if self.custom_grid and len(self.custom_grid) == 10:
+                        self.custom_grid[row][col] = bg_color
+        
+        def fill_face():
+            """Fill the entire grid with face color."""
+            face_color = self.face_colors[self.current_face_color]
+            for row in range(10):
+                for col in range(10):
+                    grid_buttons[row][col].config(bg=face_color[0])
+                    if self.custom_grid is None or len(self.custom_grid) != 10:
+                        self.custom_grid = [[face_color for _ in range(10)] for _ in range(10)]
+                    else:
+                        self.custom_grid[row][col] = face_color
+        
+        def save_custom():
+            """Save the custom expression."""
+            if self.custom_grid is None or len(self.custom_grid) != 10:
+                messagebox.showwarning(
+                    "No Custom Design",
+                    "Please draw something first!"
+                )
+                return
+            
+            self.is_custom_mode = True
+            self.current_expression = "Custom"
+            
+            # Clear button highlights
+            for btn in self.expression_buttons.values():
+                btn.config(bg='#f0f0f0', fg='black', relief=tk.RAISED)
+            
+            self._save_to_history()
+            self._update_display()
+            editor_window.destroy()
+            
+            messagebox.showinfo(
+                "Custom Expression Saved",
+                "✅ Your custom face is now displayed!\n\n"
+                "Click 'Custom Editor' again to modify it."
+            )
+        
+        # Paint color selection
+        paint_frame = ttk.Frame(editor_window)
+        paint_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        ttk.Label(paint_frame, text="Paint with:").pack(side=tk.LEFT, padx=5)
+        
+        ttk.Radiobutton(
+            paint_frame,
+            text="Face Color",
+            variable=paint_color,
+            value="face"
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Radiobutton(
+            paint_frame,
+            text="Eye Color",
+            variable=paint_color,
+            value="eye"
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Radiobutton(
+            paint_frame,
+            text="Background",
+            variable=paint_color,
+            value="bg"
+        ).pack(side=tk.LEFT, padx=5)
+        
+        # Create 10x10 grid of buttons
+        grid_frame = ttk.Frame(custom_frame)
+        grid_frame.pack()
+        
+        for row in range(10):
+            row_buttons = []
+            for col in range(10):
+                btn = tk.Button(
+                    grid_frame,
+                    text="",
+                    width=4,
+                    height=2,
+                    bg='#FFFFFF',
+                    command=lambda r=row, c=col: on_cell_click(r, c)
+                )
+                btn.grid(row=row, column=col, padx=1, pady=1)
+                row_buttons.append(btn)
+            grid_buttons.append(row_buttons)
+        
+        # Control buttons
+        control_frame = ttk.Frame(editor_window)
+        control_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ttk.Button(
+            control_frame,
+            text="🗑️ Clear All",
+            command=clear_grid
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            control_frame,
+            text="🎨 Fill Face",
+            command=fill_face
+        ).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(
+            control_frame,
+            text="💾 Save & Use",
+            command=save_custom
+        ).pack(side=tk.RIGHT, padx=5)
+        
+        # Instructions
+        instructions = ttk.Label(
+            editor_window,
+            text="Click cells to paint. Use radio buttons to select color type.",
+            font=('Helvetica', 9)
+        )
+        instructions.pack(pady=5)
 
     def _update_display(self):
         """Draw the face on the canvas using colored rectangles.

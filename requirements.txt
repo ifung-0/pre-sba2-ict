@@ -1,0 +1,12 @@
+# HKDSE ICT Pre-SBA 2: Facial Expression Program
+# Requirements file
+# Install with: pip install -r requirements.txt
+
+# Optional: NumPy for CLI array demonstration
+numpy>=1.21.0
+
+# Required: PyInstaller for creating standalone executables
+pyinstaller>=5.0.0
+
+# Note: tkinter comes pre-installed with Python
+# No additional installation needed for GUI version
